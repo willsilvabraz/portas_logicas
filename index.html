@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#11151c">
+  <title>Logic Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">⌁</span><span>Logic <b>Simulator</b></span></div>
+    <div class="toolbar">
+      <button id="undoBtn" class="tool-btn" title="Desfazer (Ctrl+Z)">↶</button>
+      <button id="redoBtn" class="tool-btn" title="Refazer (Ctrl+Y)">↷</button>
+      <span class="separator"></span>
+      <button id="runBtn" class="btn btn-primary">▶ <span>Atualizar</span></button>
+      <button id="clearBtn" class="btn btn-quiet">Limpar</button>
+      <span class="separator"></span>
+      <button id="saveBtn" class="btn btn-quiet">Salvar JSON</button>
+      <button id="loadBtn" class="btn btn-quiet">Carregar</button>
+      <button id="pngBtn" class="btn btn-quiet">Exportar PNG</button>
+      <input id="fileInput" type="file" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="panel-heading"><span>COMPONENTES</span><small>ARRASTE PARA O CIRCUITO</small></div>
+      <div class="component-group">
+        <h3>Entradas e saídas</h3>
+        <div class="component-item" draggable="true" data-type="INPUT"><span class="mini-icon input-icon">IN</span><span><b>INPUT</b><small>Entrada lógica</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="OUTPUT"><span class="mini-icon output-icon">OUT</span><span><b>OUTPUT</b><small>Saída lógica</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="CLOCK"><span class="mini-icon clock-icon">◷</span><span><b>CLOCK</b><small>Gerador de pulsos</small></span><span class="plus">+</span></div>
+      </div>
+      <div class="component-group">
+        <h3>Portas lógicas</h3>
+        <div class="component-item" draggable="true" data-type="AND"><span class="gate-mini">AND</span><span><b>AND</b><small>Conjunção</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="OR"><span class="gate-mini">OR</span><span><b>OR</b><small>Disjunção</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="NOT"><span class="gate-mini">NOT</span><span><b>NOT</b><small>Inversor</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="NAND"><span class="gate-mini">NAND</span><span><b>NAND</b><small>AND invertida</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="NOR"><span class="gate-mini">NOR</span><span><b>NOR</b><small>OR invertida</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="XOR"><span class="gate-mini">XOR</span><span><b>XOR</b><small>OU exclusivo</small></span><span class="plus">+</span></div>
+        <div class="component-item" draggable="true" data-type="XNOR"><span class="gate-mini">XNOR</span><span><b>XNOR</b><small>OU exclusivo invertido</small></span><span class="plus">+</span></div>
+      </div>
+      <div class="sidebar-footer"><span class="status-dot"></span> Simulação local ativa <small>Vanilla JS · sem dependências</small></div>
+    </aside>
+
+    <section class="workspace">
+      <div class="workspace-head">
+        <div><h1>Área de Circuito</h1><p>Monte, conecte e teste seu circuito digital.</p></div>
+        <div class="workspace-actions">
+          <label class="toggle"><input id="gridToggle" type="checkbox" checked><span class="toggle-ui"></span> Grade</label>
+          <button id="zoomOut" class="square-btn" title="Diminuir zoom">−</button>
+          <span id="zoomLabel" class="zoom-label">100%</span>
+          <button id="zoomIn" class="square-btn" title="Aumentar zoom">+</button>
+          <button id="fitBtn" class="square-btn" title="Centralizar circuito">⌗</button>
+        </div>
+      </div>
+      <div id="viewport" class="viewport">
+        <div id="stage" class="stage">
+          <svg id="wires" class="wires" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#8492a6"/></marker>
+            </defs>
+            <g id="wireLayer"></g>
+            <path id="draftWire" class="draft-wire" d="" />
+          </svg>
+          <div id="nodesLayer" class="nodes-layer"></div>
+          <div id="emptyHint" class="empty-hint"><div class="empty-symbol">⌁</div><h2>Seu circuito começa aqui</h2><p>Arraste um componente da biblioteca ou clique nele para adicionar.</p><span>Conecte os terminais de saída aos terminais de entrada.</span></div>
+        </div>
+        <div class="canvas-help"><kbd>Espaço</kbd> + arrastar para mover · <kbd>Scroll</kbd> para zoom · <kbd>Del</kbd> excluir · <kbd>Shift</kbd> selecionar vários</div>
+      </div>
+      <div class="statusbar"><span id="statusText">Pronto para criar seu circuito.</span><span id="componentCount">0 componentes · 0 conexões</span></div>
+    </section>
+
+    <aside class="inspector">
+      <div class="panel-heading"><span>PROPRIEDADES</span><small id="selectedLabel">NENHUM SELECIONADO</small></div>
+      <div id="inspectorContent" class="inspector-content">
+        <div class="inspector-empty"><div class="empty-target">◎</div><b>Nenhum componente selecionado</b><p>Selecione uma porta ou um terminal no circuito para ver detalhes e editar suas propriedades.</p></div>
+      </div>
+      <div class="truth-panel" id="truthPanel">
+        <div class="truth-title">TABELA-VERDADE</div>
+        <div id="truthContent" class="truth-content">Selecione uma porta lógica para visualizar sua tabela-verdade.</div>
+      </div>
+    </aside>
+  </main>
+  <div id="toast" class="toast"></div>
+  <script src="script.js"></script>
+</body>
+</html>
